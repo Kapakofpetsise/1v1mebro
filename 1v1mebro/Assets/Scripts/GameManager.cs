@@ -2,56 +2,59 @@ using Photon.Pun;
 using Photon.Realtime;
 using UnityEngine;
 using Cinemachine;
+using StarterAssets;
+using UnityEngine.SceneManagement;
 
 namespace com.levokerem
 {
-
     public class GameManager : MonoBehaviourPunCallbacks
     {
-        public static GameManager Instance; // Singleton instance
         public GameObject playerPrefab; // Assign the player prefab in the Inspector
         public GameObject cinemachineCameraPrefab; // Assign the CinemachineVirtualCamera prefab in the Inspector
+        private static GameObject localPlayerInstance; // Static variable to track the local player instance
 
         private void Awake()
         {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
+            localPlayerInstance = null;
         }
 
         private void Start()
         {
+            if (!PhotonNetwork.IsConnected)
+            {
+                SceneManager.LoadScene("Launcher");
+                return;
+            }
             if (playerPrefab == null || cinemachineCameraPrefab == null)
             {
                 Debug.LogError("Player or Cinemachine camera prefab is not assigned in GameManager.");
                 return;
             }
-
-            if (PhotonNetwork.IsConnected && PhotonNetwork.InRoom)
+            if (PhotonNetwork.InRoom)
             {
-                SpawnPlayer();
+                Debug.LogFormat("We are Instantiating LocalPlayer from {0}", SceneManagerHelper.ActiveSceneName);
+                if (localPlayerInstance == null)
+                {
+                    SpawnPlayer();
+                }
             }
             else
             {
                 Debug.LogError("Not connected to Photon or not in a room.");
             }
         }
-
         private void SpawnPlayer()
         {
-            // Spawn the player character
-            GameObject player = PhotonNetwork.Instantiate(playerPrefab.name, Vector3.zero, Quaternion.identity);
-
-            // Check if this player object belongs to the local client
-            if (player.GetComponent<PhotonView>().IsMine)
+            // Check if the local player instance already exists
+            if (localPlayerInstance == null)
             {
+                // Spawn the player character
+                GameObject player = PhotonNetwork.Instantiate(playerPrefab.name, new Vector3(0f, 5f, 0f), Quaternion.identity, 0);
+                localPlayerInstance = player; // Set the local player instance
                 SetupCameraForLocalPlayer(player);
             }
         }
+
         private void SetupCameraForLocalPlayer(GameObject localPlayer)
         {
             // Find the PlayerCameraRoot sub-object
@@ -97,24 +100,32 @@ namespace com.levokerem
         // Callbacks for Photon
         public override void OnPlayerEnteredRoom(Player newPlayer)
         {
-            Debug.Log($"Player {newPlayer.NickName} joined the room.");
+            Debug.Log("OnPlayerEnteredRoom() " + newPlayer.NickName); // not seen if you're the player connecting
         }
 
         public override void OnPlayerLeftRoom(Player otherPlayer)
         {
-            Debug.Log($"Player {otherPlayer.NickName} left the room.");
+            Debug.Log("OnPlayerLeftRoom() " + otherPlayer.NickName); // seen when other disconnects
         }
-
+        public override void OnJoinedRoom()
+        {
+            Debug.LogFormat("We are Instantiating LocalPlayer from {0}", SceneManagerHelper.ActiveSceneName);
+            if (localPlayerInstance == null)
+            {
+                SpawnPlayer();
+            }
+        }
         public override void OnLeftRoom()
         {
             Debug.Log("Left the room, returning to Main Menu.");
+            localPlayerInstance = null; // Reset the local player instance
             PhotonNetwork.LoadLevel("Launcher"); // Load a Main Menu scene when leaving the room
         }
-
         public override void OnDisconnected(DisconnectCause cause)
         {
             Debug.LogError($"Disconnected from Photon: {cause}");
-            // Optionally handle disconnection, e.g., return to main menu
+            localPlayerInstance = null; // Reset the local player instance
+            PhotonNetwork.LoadLevel("Launcher"); // Load a Main Menu scene when disconnected
         }
     }
 }

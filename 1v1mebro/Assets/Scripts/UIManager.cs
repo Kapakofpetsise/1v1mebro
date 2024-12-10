@@ -1,33 +1,70 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class UIManager : MonoBehaviour
 {
     public GameObject uiCanvas; // Reference to the UI canvas
+    public InputActionAsset inputActions; // Reference to the Input Action Asset
 
-    // Start is called before the first frame update
-    void Start()
+    private InputActionMap gameplayActionMap;
+    private InputActionMap uiActionMap;
+
+    private void Start()
     {
-        if (uiCanvas == null)
+        if (uiCanvas == null || inputActions == null)
         {
-            Debug.LogError("UI Canvas is not assigned in the UIManager.");
+            Debug.LogError("UI Canvas or Input Action Asset is not assigned in UIManager.");
+            return;
         }
-        else
+
+        // Get the action maps
+        gameplayActionMap = inputActions.FindActionMap("Player");
+        uiActionMap = inputActions.FindActionMap("UI");
+
+        if (gameplayActionMap == null || uiActionMap == null)
         {
-            uiCanvas.SetActive(false); // Ensure the canvas is initially hidden
+            Debug.LogError("Action maps not found in the Input Action Asset.");
+            return;
+        }
+
+        // Enable the gameplay action map by default
+        gameplayActionMap.Enable();
+        uiActionMap.Disable();
+
+        // Ensure the canvas is initially hidden
+        uiCanvas.SetActive(false);
+    }
+
+    private void Update()
+    {
+        if (Keyboard.current.escapeKey.wasPressedThisFrame)
+        {
+            ToggleUI();
         }
     }
 
-    // Update is called once per frame
-    void Update()
+    private void ToggleUI()
     {
-        if (Input.GetKeyDown(KeyCode.Escape))
+        bool isActive = !uiCanvas.activeSelf;
+        uiCanvas.SetActive(isActive); // Toggle the canvas visibility
+
+        if (isActive)
         {
-            if (uiCanvas != null)
-            {
-                uiCanvas.SetActive(!uiCanvas.activeSelf); // Toggle the canvas visibility
-            }
+            // Switch to UI action map
+            gameplayActionMap.Disable();
+            uiActionMap.Enable();
+            // Show the cursor
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+        else
+        {
+            // Switch to gameplay action map
+            uiActionMap.Disable();
+            gameplayActionMap.Enable();
+            // Hide the cursor
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
         }
     }
 }

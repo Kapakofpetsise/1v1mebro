@@ -13,8 +13,14 @@ namespace StarterAssets
 #if ENABLE_INPUT_SYSTEM && STARTER_ASSETS_PACKAGES_CHECKED
     [RequireComponent(typeof(PlayerInput))]
 #endif
-    public class ThirdPersonController : MonoBehaviourPun
+    public class ThirdPersonController : MonoBehaviourPunCallbacks, IPunObservable
     {
+
+        [Tooltip("The current Health of our player")]
+        public float Health = 1f;
+
+
+
         [Header("Player")]
         [Tooltip("Move speed of the character in m/s")]
         public float MoveSpeed = 2.0f;
@@ -128,7 +134,6 @@ namespace StarterAssets
         {
             if (photonView.IsMine)
             {
-                // get a reference to our main camera
                 if (_mainCamera == null)
                 {
                     _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
@@ -138,51 +143,46 @@ namespace StarterAssets
 
         private void Start()
         {
-            if (!photonView.IsMine)
+            //Maybe move controller and hasAnimator outside of the if
+            if (photonView.IsMine)
             {
-                return;
-            }
+                _cinemachineTargetYaw = CinemachineCameraTarget.transform.rotation.eulerAngles.y;
 
-            _cinemachineTargetYaw = CinemachineCameraTarget.transform.rotation.eulerAngles.y;
-
-            _hasAnimator = TryGetComponent(out _animator);
-            _controller = GetComponent<CharacterController>();
-            _input = GetComponent<StarterAssetsInputs>();
+                _hasAnimator = TryGetComponent(out _animator);
+                _controller = GetComponent<CharacterController>();
+                _input = GetComponent<StarterAssetsInputs>();
 #if ENABLE_INPUT_SYSTEM && STARTER_ASSETS_PACKAGES_CHECKED
     _playerInput = GetComponent<PlayerInput>();
 #else
-            Debug.LogError("Starter Assets package is missing dependencies. Please use Tools/Starter Assets/Reinstall Dependencies to fix it");
+                Debug.LogError("Starter Assets package is missing dependencies. Please use Tools/Starter Assets/Reinstall Dependencies to fix it");
 #endif
 
-            AssignAnimationIDs();
+                AssignAnimationIDs();
 
-            // reset our timeouts on start
-            _jumpTimeoutDelta = JumpTimeout;
-            _fallTimeoutDelta = FallTimeout;
+                // reset our timeouts on start
+                _jumpTimeoutDelta = JumpTimeout;
+                _fallTimeoutDelta = FallTimeout;
+            }
         }
 
         private void Update()
         {
-            if (!photonView.IsMine)
+            if (photonView.IsMine)
             {
-                return;
+                _hasAnimator = TryGetComponent(out _animator);
+
+                JumpAndGravity();
+                GroundedCheck();
+                Move();
             }
-
-            _hasAnimator = TryGetComponent(out _animator);
-
-            JumpAndGravity();
-            GroundedCheck();
-            Move();
         }
 
         private void LateUpdate()
         {
-            if (!photonView.IsMine)
+            if (photonView.IsMine)
             {
-                return;
+                CameraRotation();
             }
-
-            CameraRotation();
         }
 
         private void AssignAnimationIDs()
@@ -405,6 +405,19 @@ namespace StarterAssets
             if (animationEvent.animatorClipInfo.weight > 0.5f)
             {
                 AudioSource.PlayClipAtPoint(LandingAudioClip, transform.TransformPoint(_controller.center), FootstepAudioVolume);
+            }
+        }
+        public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+        {
+            if (stream.IsWriting)
+            {
+                // We own this player: send the others our data
+                stream.SendNext(this.Health);
+            }
+            else
+            {
+                // Network player, receive data
+                this.Health = (float)stream.ReceiveNext();
             }
         }
     }
