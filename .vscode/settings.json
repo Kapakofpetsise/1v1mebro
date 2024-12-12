@@ -51,5 +51,5 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "1v1MeBro.sln"
+    "dotnet.defaultSolution": "1v1mebro.sln"
 }
