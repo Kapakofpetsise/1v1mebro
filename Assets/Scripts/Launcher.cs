@@ -73,6 +73,17 @@ namespace com.levokerem
                 PhotonNetwork.GameVersion = gameVersion;
             }
         }
+        public void QuitApplication()
+        {
+            Application.Quit();
+        }
+        public void Credits()
+        {
+            if (toastManager != null)
+            {
+                toastManager.ShowToast("Game developed by Levent & Kerem");
+            }
+        }
     }
 }
 
