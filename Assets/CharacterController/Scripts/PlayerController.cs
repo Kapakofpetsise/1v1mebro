@@ -3,9 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
+using Photon.Pun;
 
 [DefaultExecutionOrder(-1)]
-public class PlayerController : MonoBehaviour
+public class PlayerController : MonoBehaviourPunCallbacks
 {
     #region Class Variables
 
@@ -55,6 +56,14 @@ public class PlayerController : MonoBehaviour
         {
             swordScript = GetComponentInChildren<SwordScript>();
         }
+
+        // Disable the camera if this is not the local player
+        if (!photonView.IsMine && _playerCamera != null)
+        {
+            _playerCamera.gameObject.SetActive(false);
+        }
+
+
     }
     #endregion
 
@@ -117,6 +126,8 @@ public class PlayerController : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (!photonView.IsMine) return;
+
         _cameraRotation.x += _playerLocomotionInput.LookInput.x * lookSensHor;
         _cameraRotation.y = Mathf.Clamp(_cameraRotation.y - lookSensVer * _playerLocomotionInput.LookInput.y, -lookLimitVer, lookLimitVer);
 

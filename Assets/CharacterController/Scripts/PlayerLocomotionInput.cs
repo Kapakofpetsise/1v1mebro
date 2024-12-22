@@ -2,49 +2,85 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Photon.Pun;
 
 [DefaultExecutionOrder(-2)]
-public class PlayerLocomotionInput : MonoBehaviour, PlayerControls.IPlayerLocomotionMapActions
+public class PlayerLocomotionInput : MonoBehaviourPunCallbacks, PlayerControls.IPlayerLocomotionMapActions, IPunObservable
 {
 
     public bool SprintToggledOn { get; private set; }
     public PlayerControls PlayerControls { get; private set; }
     public Vector2 MovementInput { get; private set; }
     public Vector2 LookInput { get; private set; }
-    
-    
-    private void OnEnable() {
-        PlayerControls = new PlayerControls();
-        PlayerControls.Enable();
 
-        PlayerControls.PlayerLocomotionMap.Enable();
-        PlayerControls.PlayerLocomotionMap.SetCallbacks(this);
-        
+
+    public override void OnEnable()
+    {
+        if (photonView.IsMine)
+        {
+            PlayerControls = new PlayerControls();
+            PlayerControls.Enable();
+
+            PlayerControls.PlayerLocomotionMap.Enable();
+            PlayerControls.PlayerLocomotionMap.SetCallbacks(this);
+        }
     }
-    
-    private void OnDisable() {
-        PlayerControls.PlayerLocomotionMap.Disable();
-        PlayerControls.PlayerLocomotionMap.RemoveCallbacks(this);
+
+    public override void OnDisable()
+    {
+        if (photonView.IsMine)
+        {
+            PlayerControls.PlayerLocomotionMap.Disable();
+            PlayerControls.PlayerLocomotionMap.RemoveCallbacks(this);
+        }
     }
 
     public void OnMovement(InputAction.CallbackContext context)
     {
-        MovementInput = context.ReadValue<Vector2>();
+        if (photonView.IsMine)
+        {
+            MovementInput = context.ReadValue<Vector2>();
+        }
     }
 
     public void OnLook(InputAction.CallbackContext context)
     {
-        LookInput = context.ReadValue<Vector2>();
+        if (photonView.IsMine)
+        {
+            LookInput = context.ReadValue<Vector2>();
+        }
     }
 
     public void OnToggleSprint(InputAction.CallbackContext context)
     {
-        if (context.performed){
-            SprintToggledOn = !SprintToggledOn;
-        }
-        else if (context.canceled){
-            SprintToggledOn = false;
+        if (photonView.IsMine)
+        {
+            if (context.performed)
+            {
+                SprintToggledOn = !SprintToggledOn;
+            }
+            else if (context.canceled)
+            {
+                SprintToggledOn = false;
+            }
         }
     }
 
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        if (stream.IsWriting)
+        {
+            // We own this player: send the others our data
+            stream.SendNext(SprintToggledOn);
+            stream.SendNext(MovementInput);
+            stream.SendNext(LookInput);
+        }
+        else
+        {
+            // Network player, receive data
+            SprintToggledOn = (bool)stream.ReceiveNext();
+            MovementInput = (Vector2)stream.ReceiveNext();
+            LookInput = (Vector2)stream.ReceiveNext();
+        }
+    }
 }
