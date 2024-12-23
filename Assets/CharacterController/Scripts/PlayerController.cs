@@ -43,6 +43,7 @@ public class PlayerController : MonoBehaviourPunCallbacks
     private Vector2 _cameraRotation = Vector2.zero;
     private Vector2 _playerTargetRotation = Vector2.zero;
     private Vector3 _velocity = Vector3.zero;
+    public bool isDead = false;
 
     #endregion
 
@@ -69,6 +70,11 @@ public class PlayerController : MonoBehaviourPunCallbacks
 
     private void Update()
     {
+        if (isDead) return;
+
+        if (UIManager.IsUIActive)
+            return;
+
         HandleLateralMovement();
         ApplyGravity();
         UpdateMovementState();
@@ -128,6 +134,11 @@ public class PlayerController : MonoBehaviourPunCallbacks
     {
         if (!photonView.IsMine) return;
 
+        if (isDead) return;
+
+        if (UIManager.IsUIActive)
+            return;
+
         _cameraRotation.x += _playerLocomotionInput.LookInput.x * lookSensHor;
         _cameraRotation.y = Mathf.Clamp(_cameraRotation.y - lookSensVer * _playerLocomotionInput.LookInput.y, -lookLimitVer, lookLimitVer);
 
@@ -158,14 +169,15 @@ public class PlayerController : MonoBehaviourPunCallbacks
 
     private void Die()
     {
-         Debug.Log($"{gameObject.name} has died!");
+        Debug.Log($"{gameObject.name} has died!");
+
+        isDead = true; // Set the isDead flag to true
 
         // Play death animation
         if (playerAnimator != null)
         {
             playerAnimator.SetTrigger("Die");
         }
-
     }
 
     public void StartAttack()

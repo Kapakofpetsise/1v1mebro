@@ -10,10 +10,12 @@ namespace com.levokerem
     {
         public GameObject playerPrefab; // Assign the player prefab in the Inspector
         private static GameObject localPlayerInstance; // Static variable to track the local player instance
+        private PlayerControls playerControls;
 
         private void Awake()
         {
             localPlayerInstance = null;
+            playerControls = new PlayerControls();
         }
 
         private void Start()
@@ -43,13 +45,26 @@ namespace com.levokerem
         }
         private void SpawnPlayer()
         {
-            // Check if the local player instance already exists
             if (localPlayerInstance == null)
             {
+                // Determine the spawn position based on the number of players in the room
+                Vector3 spawnPosition;
+                Quaternion spawnRotation;
+                if (PhotonNetwork.CurrentRoom.PlayerCount == 1)
+                {
+                    spawnPosition = new Vector3(-0.51f, -0.67f, 2.68f); // First player spawn position
+                    spawnRotation = Quaternion.Euler(0, 0, 0); // First player spawn rotation
+                }
+                else
+                {
+                    spawnPosition = new Vector3(1.2f, -0.67f, 16.05f); // Second player spawn position
+                    spawnRotation = Quaternion.Euler(0, 180, 0); // Second player spawn rotation
+                }
+
                 // Spawn the player character
-                GameObject player = PhotonNetwork.Instantiate(playerPrefab.name, new Vector3(0f, 5f, 0f), Quaternion.identity, 0);
+                GameObject player = PhotonNetwork.Instantiate(playerPrefab.name, spawnPosition, spawnRotation);
                 localPlayerInstance = player; // Set the local player instance
-                //SetupCameraForLocalPlayer(player);
+                                              //SetupCameraForLocalPlayer(player);
             }
         }
 

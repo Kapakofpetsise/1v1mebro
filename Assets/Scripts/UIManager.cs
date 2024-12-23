@@ -10,6 +10,8 @@ public class UIManager : MonoBehaviour
     private InputActionMap playerLocomotionMap;
     private InputActionMap uiActionMap;
 
+    public static bool IsUIActive { get; private set; } = false;
+
     private void Start()
     {
         if (uiCanvas == null || inputActions == null)
@@ -36,6 +38,7 @@ public class UIManager : MonoBehaviour
 
         // Ensure the canvas is initially hidden
         uiCanvas.SetActive(false);
+        IsUIActive = false;
     }
 
     private void Update()
@@ -48,10 +51,10 @@ public class UIManager : MonoBehaviour
 
     private void ToggleUI()
     {
-        bool isActive = !uiCanvas.activeSelf;
-        uiCanvas.SetActive(isActive); // Toggle the canvas visibility
+        IsUIActive = !IsUIActive;
+        uiCanvas.SetActive(IsUIActive); // Toggle the canvas visibility
 
-        if (isActive)
+        if (IsUIActive)
         {
             // Switch to UI action map
             Debug.Log("Enabling UI action map and disabling player action maps.");

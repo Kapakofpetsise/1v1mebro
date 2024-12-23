@@ -2745,6 +2745,7 @@ MonoBehaviour:
   attackDamage: 10
   playerHealth: 100
   currentHealth: 100
+  isDead: 0
 --- !u!143 &9037786681946426762
 CharacterController:
   m_ObjectHideFlags: 0

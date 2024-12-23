@@ -14,13 +14,22 @@ public class PlayerLocomotionInput : MonoBehaviourPunCallbacks, PlayerControls.I
     public Vector2 LookInput { get; private set; }
 
 
+    private void Awake()
+    {
+        if (photonView.IsMine)
+        {
+            if (PlayerControls == null)
+            {
+                PlayerControls = new PlayerControls();
+            }
+        }
+    }
+
     public override void OnEnable()
     {
         if (photonView.IsMine)
         {
-            PlayerControls = new PlayerControls();
             PlayerControls.Enable();
-
             PlayerControls.PlayerLocomotionMap.Enable();
             PlayerControls.PlayerLocomotionMap.SetCallbacks(this);
         }
@@ -28,7 +37,7 @@ public class PlayerLocomotionInput : MonoBehaviourPunCallbacks, PlayerControls.I
 
     public override void OnDisable()
     {
-        if (photonView.IsMine)
+        if (photonView.IsMine && PlayerControls != null)
         {
             PlayerControls.PlayerLocomotionMap.Disable();
             PlayerControls.PlayerLocomotionMap.RemoveCallbacks(this);
